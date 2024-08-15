@@ -10,6 +10,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthUserDetailsService implements UserDetailsService {
@@ -28,5 +30,15 @@ public class AuthUserDetailsService implements UserDetailsService {
         return new User(authUser.getUsername(), authUser.getPassword(),
                 authUser.isActive(), true, true, true,
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")));
+    }
+
+    public List<AuthUser> getAllUsers() {
+        return authUserRepository.findAll();
+    }
+
+    public List<AuthUser> getAllUsersExcludingUsername(String username) {
+        return authUserRepository.findAll().stream()
+                .filter(user -> !user.getUsername().equalsIgnoreCase(username))
+                .collect(Collectors.toList());
     }
 }

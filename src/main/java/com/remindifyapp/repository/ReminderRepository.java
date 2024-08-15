@@ -7,13 +7,11 @@
 
 package com.remindifyapp.repository;
 
-import com.remindifyapp.entity.AuthUser;
 import com.remindifyapp.entity.Reminder;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ReminderRepository extends MongoRepository<Reminder, Integer> {

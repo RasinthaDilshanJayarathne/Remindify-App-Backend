@@ -21,6 +21,8 @@ import org.springframework.data.annotation.Id;
 @NoArgsConstructor
 @Document("reminder")
 public class Reminder {
+    @Id
+    private int id;
     private String message;
     private String username;
 }

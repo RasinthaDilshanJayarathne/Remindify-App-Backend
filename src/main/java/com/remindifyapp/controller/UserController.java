@@ -21,17 +21,19 @@ public class UserController {
     private final AuthUserRepository authUserRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private ResponseDTO responseDTO;
-
     public UserController(AuthUserRepository authUserRepository, PasswordEncoder passwordEncoder) {
         this.authUserRepository = authUserRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> registerUser(@Valid @RequestBody UserDTO userDTO) {
+    public ResponseEntity<ResponseDTO<Void>> registerUser(@Valid @RequestBody UserDTO userDTO) {
+        ResponseDTO<Void> responseDTO = new ResponseDTO<>();
+
         if (authUserRepository.findByUsername(userDTO.getUsername()).isPresent()) {
-            return new ResponseEntity<>(Map.of("success", "false", "message", "Username already exists"), HttpStatus.BAD_REQUEST);
+            responseDTO.setStatusCode(400);
+            responseDTO.setMessage("Username already exists");
+            return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
         }
 
         if (userDTO.getImage() != null && !userDTO.getImage().isEmpty()) {
@@ -39,9 +41,13 @@ public class UserController {
                 byte[] imageBytes = ImageUtils.decodeBase64ToImage(userDTO.getImage());
                 // Save imageBytes to database or file system
             } catch (IllegalArgumentException e) {
-                return new ResponseEntity<>(Map.of("success", "false", "message", "Invalid Base64 string"), HttpStatus.BAD_REQUEST);
+                responseDTO.setStatusCode(400);
+                responseDTO.setMessage("Invalid Base64 string");
+                return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
             } catch (Exception e) {
-                return new ResponseEntity<>(Map.of("success", "false", "message", "Failed to save image"), HttpStatus.INTERNAL_SERVER_ERROR);
+                responseDTO.setStatusCode(500);
+                responseDTO.setMessage("Failed to save image");
+                return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
 
@@ -54,12 +60,15 @@ public class UserController {
                 .active(true)
                 .build();
         authUserRepository.save(newUser);
-        return new ResponseEntity<>(Map.of("success", "true", "message", "User registered successfully"), HttpStatus.CREATED);
+
+        responseDTO.setStatusCode(201);
+        responseDTO.setMessage("User registered successfully");
+        return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
-    public ResponseDTO loginUser(@RequestParam String username, @RequestParam String password) {
-        responseDTO = new ResponseDTO(); // Initialize responseDTO here
+    public ResponseDTO<AuthUser> loginUser(@RequestParam String username, @RequestParam String password) {
+        ResponseDTO<AuthUser> responseDTO = new ResponseDTO<>();
 
         Optional<AuthUser> optionalUser = authUserRepository.findByUsername(username);
         if (optionalUser.isPresent()) {
@@ -80,10 +89,5 @@ public class UserController {
         }
 
         return responseDTO;
-    }
-
-    @GetMapping("/")
-    public String getHello() {
-        return "Hello";
     }
 }

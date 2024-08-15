@@ -29,9 +29,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Consider enabling CSRF protection in production
                 .cors(Customizer.withDefaults()) // Enable CORS with default configuration
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/register", "/getReminderByUsername", "/error").permitAll() // Public endpoints
+                        .requestMatchers("/register", "/getReminderByUsername","/users","/groups", "/error").permitAll() // Public endpoints
                         .requestMatchers(HttpMethod.POST, "/login").permitAll() // Public login endpoint
-                        .requestMatchers(HttpMethod.POST, "/addReminder").permitAll() // Public login endpoint
+                        .requestMatchers(HttpMethod.POST, "/addReminder").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/create").permitAll()
                         .anyRequest().authenticated()) // All other endpoints require authentication
                 .userDetailsService(authUserDetailsService) // Custom UserDetailsService
                 .httpBasic(Customizer.withDefaults()) // HTTP Basic authentication

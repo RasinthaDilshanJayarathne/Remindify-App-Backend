@@ -10,7 +10,7 @@ package com.remindifyapp.bean;
 import lombok.Data;
 
 @Data
-public class ResponseDTO {
+public class ResponseDTO<T> {
     private int statusCode;
     private String message;
     private Object data;
