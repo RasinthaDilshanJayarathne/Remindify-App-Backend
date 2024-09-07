@@ -13,4 +13,5 @@ import lombok.Data;
 public class ReminderDTO {
     private String message;
     private String username;
+    private String category;
 }

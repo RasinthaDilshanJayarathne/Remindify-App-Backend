@@ -25,4 +25,5 @@ public class Reminder {
     private int id;
     private String message;
     private String username;
+    private String category;
 }
