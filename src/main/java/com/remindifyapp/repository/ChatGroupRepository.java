@@ -17,4 +17,8 @@ import java.util.List;
 @Repository
 public interface ChatGroupRepository extends MongoRepository<ChatGroup, Integer> {
     List<ChatGroup> findByGroupname(String groupname);
+
+    List<ChatGroup> findAllByUsername(String username);
+
+    List<ChatGroup> findAllByEmail(String email);
 }

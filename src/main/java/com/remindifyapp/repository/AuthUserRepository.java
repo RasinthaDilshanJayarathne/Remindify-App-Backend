@@ -15,4 +15,7 @@ public interface AuthUserRepository extends MongoRepository<AuthUser, String> {
     List<AuthUser> findByUsernameNot(String username);
     Optional<AuthUser> findByEmail(String email);
 
+    List<AuthUser> getAllUsersExcludingUsername(String username);
+
+    List<AuthUser> getAllUsers();
 }

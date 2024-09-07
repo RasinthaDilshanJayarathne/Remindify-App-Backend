@@ -14,6 +14,7 @@ import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
+@RequestMapping("/reminders")
 public class ManageReminderController {
 
     private static final Logger logger = LoggerFactory.getLogger(ManageReminderController.class);

@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
+@RequestMapping("/groups")
 public class ChatGroupController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatGroupController.class);
@@ -24,7 +25,7 @@ public class ChatGroupController {
     }
 
     @PostMapping("/create")
-    public ResponseDTO<ChatGroup> createChatGroup(@RequestBody ChatGroup chatGroup) {
+    public ResponseDTO<ChatGroup> createChatGroup(@RequestBody ChatGroup chatGroup, @RequestParam String username) {
         logger.info("Creating a new chat group: {}", chatGroup.getGroupname());
         ChatGroup createdChatGroup = chatGroupService.createChatGroup(chatGroup);
 
@@ -36,7 +37,7 @@ public class ChatGroupController {
         return responseDTO;
     }
 
-    @GetMapping("/groups")
+    @GetMapping("/AllGroups")
     public ResponseDTO<List<ChatGroup>> getAllChatGroups(@RequestParam(required = false) String username) {
         ResponseDTO<List<ChatGroup>> responseDTO = new ResponseDTO<>();
         List<ChatGroup> chatGroups;
@@ -56,7 +57,7 @@ public class ChatGroupController {
         return responseDTO;
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/getGroupById/{id}")
     public ResponseDTO<ChatGroup> getChatGroupById(@PathVariable int id) {
         logger.info("Fetching chat group with ID: {}", id);
         Optional<ChatGroup> chatGroup = chatGroupService.getChatGroupById(id);
@@ -77,7 +78,7 @@ public class ChatGroupController {
         return responseDTO;
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/updateGroup/{id}")
     public ResponseDTO<ChatGroup> updateChatGroup(@PathVariable int id, @RequestBody ChatGroup updatedChatGroup) {
         logger.info("Updating chat group with ID: {}", id);
         ChatGroup updatedGroup = chatGroupService.updateChatGroup(id, updatedChatGroup);
@@ -98,7 +99,7 @@ public class ChatGroupController {
         return responseDTO;
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/deleteGroup/{id}")
     public ResponseDTO<Void> deleteChatGroup(@PathVariable int id) {
         logger.info("Deleting chat group with ID: {}", id);
         chatGroupService.deleteChatGroup(id);

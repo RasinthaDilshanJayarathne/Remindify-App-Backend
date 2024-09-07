@@ -13,10 +13,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
+@RequestMapping("/users")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
@@ -119,7 +121,7 @@ public class UserController {
     }
 
     // READ: Get User by Username
-    @GetMapping("/{username}")
+    @GetMapping("/getReminderByUsername/{username}")
     public ResponseDTO<AuthUser> getUserByUsername(@PathVariable String username) {
         ResponseDTO<AuthUser> responseDTO = new ResponseDTO<>();
 
@@ -134,6 +136,35 @@ public class UserController {
             responseDTO.setMessage("User not found");
             responseDTO.setData(null);
             logger.warn("User not found with username: {}", username);
+        }
+
+        return responseDTO;
+    }
+
+    // READ: Get All Users
+    @GetMapping("/allUsers")
+    public ResponseDTO<List<AuthUser>> getUsersExcluding(@RequestParam(required = false) String username) {
+        ResponseDTO<List<AuthUser>> responseDTO = new ResponseDTO<>();
+
+        try {
+            if (username == null || username.isEmpty()) {
+                logger.info("Fetching all users as no username is provided.");
+                List<AuthUser> users = authUserRepository.getAllUsers();
+                responseDTO.setStatusCode(200);
+                responseDTO.setMessage("Fetched all users successfully");
+                responseDTO.setData(users);
+            } else {
+                logger.info("Fetching all users excluding the username: {}", username);
+                List<AuthUser> users = authUserRepository.getAllUsersExcludingUsername(username);
+                responseDTO.setStatusCode(200);
+                responseDTO.setMessage("Fetched all users excluding the provided username successfully");
+                responseDTO.setData(users);
+            }
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching users", e);
+            responseDTO.setStatusCode(500);
+            responseDTO.setMessage("An error occurred while fetching users");
+            responseDTO.setData(null);
         }
 
         return responseDTO;
