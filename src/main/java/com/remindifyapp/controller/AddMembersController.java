@@ -27,18 +27,25 @@ public class AddMembersController {
     public ResponseDTO<List<AuthUser>> getUsersExcluding(@RequestParam(required = false) String username) {
         ResponseDTO<List<AuthUser>> responseDTO = new ResponseDTO<>();
 
-        if (username == null || username.isEmpty()) {
-            logger.info("Fetching all users as no username is provided.");
-            List<AuthUser> users = userService.getAllUsers();
-            responseDTO.setStatusCode(200);
-            responseDTO.setMessage("Fetched all users successfully");
-            responseDTO.setData(users);
-        } else {
-            logger.info("Fetching all users excluding the username: {}", username);
-            List<AuthUser> users = userService.getAllUsersExcludingUsername(username);
-            responseDTO.setStatusCode(200);
-            responseDTO.setMessage("Fetched all users excluding the provided username successfully");
-            responseDTO.setData(users);
+        try {
+            if (username == null || username.isEmpty()) {
+                logger.info("Fetching all users as no username is provided.");
+                List<AuthUser> users = userService.getAllUsers();
+                responseDTO.setStatusCode(200);
+                responseDTO.setMessage("Fetched all users successfully");
+                responseDTO.setData(users);
+            } else {
+                logger.info("Fetching all users excluding the username: {}", username);
+                List<AuthUser> users = userService.getAllUsersExcludingUsername(username);
+                responseDTO.setStatusCode(200);
+                responseDTO.setMessage("Fetched all users excluding the provided username successfully");
+                responseDTO.setData(users);
+            }
+        } catch (Exception e) {
+            logger.error("An error occurred while fetching users", e);
+            responseDTO.setStatusCode(500);
+            responseDTO.setMessage("An error occurred while fetching users");
+            responseDTO.setData(null);
         }
 
         return responseDTO;

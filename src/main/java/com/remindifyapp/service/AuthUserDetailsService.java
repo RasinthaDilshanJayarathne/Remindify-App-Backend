@@ -37,8 +37,6 @@ public class AuthUserDetailsService implements UserDetailsService {
     }
 
     public List<AuthUser> getAllUsersExcludingUsername(String username) {
-        return authUserRepository.findAll().stream()
-                .filter(user -> !user.getUsername().equalsIgnoreCase(username))
-                .collect(Collectors.toList());
+        return authUserRepository.findByUsernameNot(username);
     }
 }
