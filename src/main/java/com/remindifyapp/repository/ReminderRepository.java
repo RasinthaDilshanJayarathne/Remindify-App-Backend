@@ -1,7 +1,7 @@
 /**
  * Author : rasintha_j
- * Date : 6/28/2024
- * Time : 3:14 PM
+ * Date : 9/7/2024
+ * Time : 7:30 PM
  * Project Name : remindifyapp
  */
 
@@ -9,11 +9,10 @@ package com.remindifyapp.repository;
 
 import com.remindifyapp.entity.Reminder;
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository
-public interface ReminderRepository extends MongoRepository<Reminder, Integer> {
+public interface ReminderRepository extends MongoRepository<Reminder, String> {
+    // Custom query methods can be added here if needed
     List<Reminder> findByUsername(String username);
 }

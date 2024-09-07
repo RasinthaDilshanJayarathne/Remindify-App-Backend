@@ -18,9 +18,4 @@ public class UserDTO {
     private String password;
     private Date birthday;
     private String image;
-
-    public UserDTO(String username, String email) {
-        this.username = username;
-        this.email = email;
-    }
 }

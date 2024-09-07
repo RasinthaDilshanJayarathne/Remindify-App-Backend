@@ -1,10 +1,15 @@
 package com.remindifyapp.config;
 
 import com.remindifyapp.service.AuthUserDetailsService;
+import com.remindifyapp.service.JWTService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,46 +21,62 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final UserDetailsService authUserDetailsService;
+    private final AuthUserDetailsService authUserDetailsService;
+    private final JWTService jwtService;
 
-
-    public SecurityConfig(UserDetailsService authUserDetailsService) {
+    public SecurityConfig(AuthUserDetailsService authUserDetailsService, JWTService jwtService) {
         this.authUserDetailsService = authUserDetailsService;
+        this.jwtService = jwtService;
     }
 
     @Bean
-    /*public SecurityFilterChain defaultFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // Consider enabling CSRF protection in production
-                .cors(Customizer.withDefaults()) // Enable CORS with default configuration
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/register", "/getReminderByUsername","/users","/groups", "/error").permitAll() // Public endpoints
-                        .requestMatchers(HttpMethod.POST, "/login").permitAll() // Public login endpoint
-                        .requestMatchers(HttpMethod.POST, "/addReminder").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/create").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/logout", "/reminders/create").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/getReminderByUsername", "/reminders/**", "/error").permitAll()
                         .anyRequest().authenticated()) // All other endpoints require authentication
                 .userDetailsService(authUserDetailsService) // Custom UserDetailsService
-                .httpBasic(Customizer.withDefaults()) // HTTP Basic authentication
+                .logout(logout -> logout
+                        .logoutUrl("/users/logout") // Define the logout URL
+                        .logoutSuccessUrl("/users/login") // Redirect URL after successful logout
+                        .invalidateHttpSession(true) // Invalidate the session
+                        .deleteCookies("JSESSIONID") // Optionally delete cookies
+                        .addLogoutHandler((request, response, authentication) -> {
+                            // Blacklist the JWT token if applicable
+                            String token = extractTokenFromRequest(request);
+                            if (token != null) {
+                                jwtService.blacklistToken(token);
+                            }
+                        }))
                 .build();
-    }*/
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable()) // Consider enabling CSRF protection if you're using session-based authentication
-                .cors(Customizer.withDefaults()) // Enable CORS with default configuration
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/users/register", "/users/login", "/reminders/getReminderByUsername", "/users/allUsers", "/groups/AllGroups", "/groups/getGroupById/{id}","/error").permitAll() // Public endpoints
-                        .requestMatchers(HttpMethod.POST, "/reminders/addReminder","/groups/create").permitAll() // Public access to create
-                        .requestMatchers(HttpMethod.PUT, "/users/{username}","/reminders/updateReminder/{id}","/updateGroup/groups/{id}").authenticated() // Require authentication for PUT requests to update user details
-                        .requestMatchers(HttpMethod.DELETE, "/users/{username}","/reminders/deleteReminder/{id}","/groups/deleteGroup/{id}").authenticated() // Require authentication for DELETE requests
-                        .anyRequest().authenticated() // All other endpoints require authentication
-                )
-                .userDetailsService(authUserDetailsService) // Custom UserDetailsService
-                .httpBasic(Customizer.withDefaults()) // Enable HTTP Basic authentication
-                .build();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder());
+        provider.setUserDetailsService(authUserDetailsService);
+        return provider;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // BCrypt password encoder
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
+
+    // Helper method to extract JWT token from request
+    private String extractTokenFromRequest(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return null;
     }
 }

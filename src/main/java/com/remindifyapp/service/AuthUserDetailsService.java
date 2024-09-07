@@ -2,6 +2,7 @@ package com.remindifyapp.service;
 
 import com.remindifyapp.entity.AuthUser;
 import com.remindifyapp.repository.AuthUserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -10,33 +11,22 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class AuthUserDetailsService implements UserDetailsService {
 
-    private final AuthUserRepository authUserRepository;
-
-    public AuthUserDetailsService(AuthUserRepository authUserRepository) {
-        this.authUserRepository = authUserRepository;
-    }
+    @Autowired
+    private AuthUserRepository authUserRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        AuthUser authUser = authUserRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        // Retrieve user from the database
+        Optional<AuthUser> optionalAuthUser = authUserRepository.findByUsername(username);
+        AuthUser authUser = optionalAuthUser
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        return new User(authUser.getUsername(), authUser.getPassword(),
-                authUser.isActive(), true, true, true,
-                Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")));
-    }
-
-    public List<AuthUser> getAllUsers() {
-        return authUserRepository.findAll();
-    }
-
-    public List<AuthUser> getAllUsersExcludingUsername(String username) {
-        return authUserRepository.findByUsernameNot(username);
+        // Return UserDetails implementation
+        return authUser;
     }
 }
