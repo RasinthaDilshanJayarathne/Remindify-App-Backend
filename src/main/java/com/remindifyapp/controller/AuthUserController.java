@@ -47,12 +47,7 @@ public class AuthUserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ResponseDTO<AuthUser>> registerUser(
-            @RequestParam("username") String username,
-            @RequestParam("email") String email,
-            @RequestParam("password") String password,
-            @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date birthday,
-            @RequestParam(value = "image", required = false) MultipartFile image) {
+    public ResponseEntity<ResponseDTO<AuthUser>> registerUser(@RequestParam("username") String username, @RequestParam("email") String email, @RequestParam("password") String password, @RequestParam("birthday") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date birthday, @RequestParam(value = "image", required = false) MultipartFile image) {
 
         ResponseDTO<AuthUser> responseDTO = new ResponseDTO<>();
 
@@ -80,14 +75,7 @@ public class AuthUserController {
                 }
             }
 
-            AuthUser newUser = AuthUser.builder()
-                    .username(username)
-                    .email(email)
-                    .password(passwordEncoder.encode(password))
-                    .birthday(birthday)
-                    .image(imageFilename)
-                    .active(true)
-                    .build();
+            AuthUser newUser = AuthUser.builder().username(username).email(email).password(passwordEncoder.encode(password)).birthday(birthday).image(imageFilename).active(true).build();
             authUserRepository.save(newUser);
 
             logger.info("User registered successfully: {}", username);
@@ -112,9 +100,7 @@ public class AuthUserController {
             logger.info("Attempting to login user: {}", loginDTO.getUsername());
 
             // Authenticate the user
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword())
-            );
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword()));
 
             if (authentication.isAuthenticated()) {
                 // Obtain UserDetails from Authentication object
@@ -135,10 +121,7 @@ public class AuthUserController {
                 logger.info("User logged in successfully: {}", loginDTO.getUsername());
                 responseDTO.setStatusCode(200);
                 responseDTO.setMessage("Login successful");
-                responseDTO.setData(Map.of(
-                        "user", authUser,
-                        "token", token
-                ));
+                responseDTO.setData(Map.of("user", authUser, "token", token));
                 return new ResponseEntity<>(responseDTO, HttpStatus.OK);
             } else {
                 logger.warn("Invalid credentials for user: {}", loginDTO.getUsername());

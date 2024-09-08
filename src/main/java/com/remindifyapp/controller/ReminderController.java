@@ -43,18 +43,13 @@ public class ReminderController {
     private JWTService jwtService;
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseDTO<Reminder>> addReminder(
-            @Valid @RequestBody Reminder reminder,
-            BindingResult result,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Reminder>> addReminder(@Valid @RequestBody Reminder reminder, BindingResult result, @RequestHeader("Authorization") String token) {
 
         ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
         String username;
 
         if (result.hasErrors()) {
-            String errorMessage = result.getAllErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining(", "));
+            String errorMessage = result.getAllErrors().stream().map(error -> error.getDefaultMessage()).collect(Collectors.joining(", "));
             responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
             responseDTO.setMessage("Validation failed: " + errorMessage);
             logger.warn("Validation failed: {}", errorMessage);
@@ -89,19 +84,13 @@ public class ReminderController {
     }
 
     @PutMapping("/update/{id}")
-    public ResponseEntity<ResponseDTO<Reminder>> updateReminder(
-            @PathVariable String id,
-            @Valid @RequestBody Reminder reminder,
-            BindingResult result,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Reminder>> updateReminder(@PathVariable String id, @Valid @RequestBody Reminder reminder, BindingResult result, @RequestHeader("Authorization") String token) {
 
         ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
         String username;
 
         if (result.hasErrors()) {
-            String errorMessage = result.getAllErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining(", "));
+            String errorMessage = result.getAllErrors().stream().map(error -> error.getDefaultMessage()).collect(Collectors.joining(", "));
             responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
             responseDTO.setMessage("Validation failed: " + errorMessage);
             logger.warn("Validation failed: {}", errorMessage);
@@ -143,9 +132,7 @@ public class ReminderController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseDTO<Void>> deleteReminder(
-            @PathVariable String id,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Void>> deleteReminder(@PathVariable String id, @RequestHeader("Authorization") String token) {
 
         ResponseDTO<Void> responseDTO = new ResponseDTO<>();
         String username;
@@ -176,8 +163,7 @@ public class ReminderController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<ResponseDTO<List<Reminder>>> getAllReminders(
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<List<Reminder>>> getAllReminders(@RequestHeader("Authorization") String token) {
 
         ResponseDTO<List<Reminder>> responseDTO = new ResponseDTO<>();
         String username;
@@ -209,9 +195,7 @@ public class ReminderController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseDTO<Reminder>> getReminderById(
-            @PathVariable String id,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Reminder>> getReminderById(@PathVariable String id, @RequestHeader("Authorization") String token) {
 
         ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
         String username;

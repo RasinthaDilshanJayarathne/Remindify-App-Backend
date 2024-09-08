@@ -6,6 +6,7 @@
  */
 
 package com.remindifyapp.service;
+
 import com.remindifyapp.entity.Reminder;
 import com.remindifyapp.repository.ReminderRepository;
 import org.springframework.beans.factory.annotation.Autowired;

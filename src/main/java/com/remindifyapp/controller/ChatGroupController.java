@@ -40,9 +40,7 @@ public class ChatGroupController {
     private AuthUserRepository authUserRepository;
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseDTO<ChatGroup>> createChatGroup(
-            @Valid @RequestBody ChatGroupRequest chatGroupRequest,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<ChatGroup>> createChatGroup(@Valid @RequestBody ChatGroupRequest chatGroupRequest, @RequestHeader("Authorization") String token) {
 
         logger.info("Received request to create chat group: {} with users: {}", chatGroupRequest.getGroupName(), chatGroupRequest.getMembers());
         ResponseDTO<ChatGroup> responseDTO = new ResponseDTO<>();
@@ -62,9 +60,7 @@ public class ChatGroupController {
             AuthUser creator = creatorOptional.get();
 
             // Extract and validate user IDs from the request
-            List<String> userIds = chatGroupRequest.getMembers().stream()
-                    .map(ChatGroupRequest.Member::getId)
-                    .collect(Collectors.toList());
+            List<String> userIds = chatGroupRequest.getMembers().stream().map(ChatGroupRequest.Member::getId).collect(Collectors.toList());
             List<AuthUser> validUsers = authUserDetailsService.findUsersByIds(userIds);
 
             // Check if all provided user IDs are valid
@@ -78,12 +74,7 @@ public class ChatGroupController {
             validUsers.add(creator);
 
             // Create and save the chat group
-            ChatGroup chatGroup = ChatGroup.builder()
-                    .groupname(chatGroupRequest.getGroupName())
-                    .members(validUsers)
-                    .createdDate(chatGroupRequest.getCreatedDate())
-                    .status(chatGroupRequest.getStatus())
-                    .build();
+            ChatGroup chatGroup = ChatGroup.builder().groupname(chatGroupRequest.getGroupName()).members(validUsers).createdDate(chatGroupRequest.getCreatedDate()).status(chatGroupRequest.getStatus()).build();
 
             ChatGroup createdChatGroup = chatGroupService.createChatGroup(chatGroup);
             responseDTO.setStatusCode(HttpStatus.CREATED.value());
@@ -102,10 +93,7 @@ public class ChatGroupController {
     }
 
     @PostMapping("/addUser/{groupId}/{userId}")
-    public ResponseEntity<ResponseDTO<ChatGroup>> addUserToGroup(
-            @PathVariable("groupId") String groupId,
-            @PathVariable("userId") String userId,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<ChatGroup>> addUserToGroup(@PathVariable("groupId") String groupId, @PathVariable("userId") String userId, @RequestHeader("Authorization") String token) {
 
         logger.info("Received request to add user {} to group {}", userId, groupId);
         ResponseDTO<ChatGroup> responseDTO = new ResponseDTO<>();
@@ -139,10 +127,7 @@ public class ChatGroupController {
     }
 
     @PostMapping("/removeUser/{groupId}/{userId}")
-    public ResponseEntity<ResponseDTO<ChatGroup>> removeUserFromGroup(
-            @PathVariable("groupId") String groupId,
-            @PathVariable("userId") String userId,
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<ChatGroup>> removeUserFromGroup(@PathVariable("groupId") String groupId, @PathVariable("userId") String userId, @RequestHeader("Authorization") String token) {
 
         logger.info("Received request to remove user with ID: {} from chat group with ID: {}", userId, groupId);
         ResponseDTO<ChatGroup> responseDTO = new ResponseDTO<>();
@@ -181,8 +166,7 @@ public class ChatGroupController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<ResponseDTO<List<ChatGroup>>> getAllChatGroups(
-            @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<List<ChatGroup>>> getAllChatGroups(@RequestHeader("Authorization") String token) {
 
         logger.info("Received request to fetch all chat groups");
 

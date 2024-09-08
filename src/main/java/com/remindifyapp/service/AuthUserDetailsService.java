@@ -25,16 +25,13 @@ public class AuthUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Retrieve user from the database
         Optional<AuthUser> optionalAuthUser = authUserRepository.findByUsername(username);
-        AuthUser authUser = optionalAuthUser
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        AuthUser authUser = optionalAuthUser.orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
         // Return UserDetails implementation
         return authUser;
     }
 
     public List<AuthUser> findUsersByIds(List<String> userIds) {
-        return authUserRepository.findAllById(userIds).stream()
-                .filter(user -> userIds.contains(user.getId()))
-                .collect(Collectors.toList());
+        return authUserRepository.findAllById(userIds).stream().filter(user -> userIds.contains(user.getId())).collect(Collectors.toList());
     }
 }
