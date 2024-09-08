@@ -1,3 +1,10 @@
+/**
+ * Author : rasintha_j
+ * Date : 9/8/2024
+ * Time : 8:04 AM
+ * Project Name : remindifyapp
+ */
+
 package com.remindifyapp.controller;
 
 import com.remindifyapp.entity.Reminder;
@@ -6,6 +13,8 @@ import com.remindifyapp.service.JWTService;
 import com.remindifyapp.service.ReminderService;
 import com.remindifyapp.repository.AuthUserRepository;
 import com.remindifyapp.bean.ResponseDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +31,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/reminders")
 public class ReminderController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ReminderController.class);
+
     @Autowired
     private ReminderService reminderService;
 
@@ -32,8 +43,13 @@ public class ReminderController {
     private JWTService jwtService;
 
     @PostMapping("/create")
-    public ResponseEntity<ResponseDTO<Reminder>> addReminder(@Valid @RequestBody Reminder reminder, BindingResult result, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Reminder>> addReminder(
+            @Valid @RequestBody Reminder reminder,
+            BindingResult result,
+            @RequestHeader("Authorization") String token) {
+
         ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
+        String username;
 
         if (result.hasErrors()) {
             String errorMessage = result.getAllErrors().stream()
@@ -41,71 +57,36 @@ public class ReminderController {
                     .collect(Collectors.joining(", "));
             responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
             responseDTO.setMessage("Validation failed: " + errorMessage);
+            logger.warn("Validation failed: {}", errorMessage);
             return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
         }
 
-        // Validate the JWT token and extract the username
-        String username = jwtService.extractUsername(token);
-
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
-        }
-
         try {
+            username = jwtService.extractUsername(token);
+
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
             reminder.setUsername(username);  // Ensure the reminder is associated with the correct user
             Reminder savedReminder = reminderService.addReminder(reminder);
             responseDTO.setStatusCode(HttpStatus.CREATED.value());
             responseDTO.setMessage("Reminder created successfully");
             responseDTO.setData(savedReminder);
+            logger.info("Reminder created successfully: {}", savedReminder);
             return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
+
         } catch (Exception e) {
             responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             responseDTO.setMessage("An error occurred while creating the reminder");
+            logger.error("An error occurred while creating the reminder", e);
             return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
- /*   @PutMapping("/update/{id}")
-    public ResponseEntity<ResponseDTO<Reminder>> updateReminder(@Valid @RequestBody Reminder reminder, BindingResult result, @RequestHeader("Authorization") String token) {
-        ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
-
-        if (result.hasErrors()) {
-            String errorMessage = result.getAllErrors().stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining(", "));
-            responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
-            responseDTO.setMessage("Validation failed: " + errorMessage);
-            return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
-        }
-
-        // Validate the JWT token and extract the username
-        String username = jwtService.extractUsername(token);
-
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
-        }
-
-        try {
-            reminder.setUsername(username);  // Ensure the reminder is associated with the correct user
-            Reminder updatedReminder = reminderService.updateReminder(reminder);
-            responseDTO.setStatusCode(HttpStatus.OK.value());
-            responseDTO.setMessage("Reminder updated successfully");
-            responseDTO.setData(updatedReminder);
-            return new ResponseEntity<>(responseDTO, HttpStatus.OK);
-        } catch (Exception e) {
-            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            responseDTO.setMessage("An error occurred while updating the reminder");
-            return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }*/
 
     @PutMapping("/update/{id}")
     public ResponseEntity<ResponseDTO<Reminder>> updateReminder(
@@ -113,7 +94,9 @@ public class ReminderController {
             @Valid @RequestBody Reminder reminder,
             BindingResult result,
             @RequestHeader("Authorization") String token) {
+
         ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
+        String username;
 
         if (result.hasErrors()) {
             String errorMessage = result.getAllErrors().stream()
@@ -121,25 +104,25 @@ public class ReminderController {
                     .collect(Collectors.joining(", "));
             responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
             responseDTO.setMessage("Validation failed: " + errorMessage);
+            logger.warn("Validation failed: {}", errorMessage);
             return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
         }
 
-        // Validate the JWT token and extract the username
-        String username = jwtService.extractUsername(token);
-
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
-        }
-
         try {
-            // Check if the ID in the path matches the ID in the reminder object
+            username = jwtService.extractUsername(token);
+
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
             if (!id.equals(reminder.getId())) {
                 responseDTO.setStatusCode(HttpStatus.BAD_REQUEST.value());
                 responseDTO.setMessage("Reminder ID in the path does not match the ID in the request body");
+                logger.warn("Reminder ID mismatch: path ID = {}, body ID = {}", id, reminder.getId());
                 return new ResponseEntity<>(responseDTO, HttpStatus.BAD_REQUEST);
             }
 
@@ -148,119 +131,121 @@ public class ReminderController {
             responseDTO.setStatusCode(HttpStatus.OK.value());
             responseDTO.setMessage("Reminder updated successfully");
             responseDTO.setData(updatedReminder);
+            logger.info("Reminder updated successfully: {}", updatedReminder);
             return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+
         } catch (Exception e) {
             responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             responseDTO.setMessage("An error occurred while updating the reminder");
+            logger.error("An error occurred while updating the reminder", e);
             return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-
     @DeleteMapping("/{id}")
-    public ResponseEntity<ResponseDTO<Void>> deleteReminder(@PathVariable String id, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Void>> deleteReminder(
+            @PathVariable String id,
+            @RequestHeader("Authorization") String token) {
+
         ResponseDTO<Void> responseDTO = new ResponseDTO<>();
-
-        // Validate the JWT token and extract the username
-        String username = jwtService.extractUsername(token);
-
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
-        }
+        String username;
 
         try {
+            username = jwtService.extractUsername(token);
+
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
             reminderService.deleteReminder(id);
             responseDTO.setStatusCode(HttpStatus.OK.value());
             responseDTO.setMessage("Reminder deleted successfully");
-            responseDTO.setData(id);
+            logger.info("Reminder deleted successfully: ID = {}", id);
             return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+
         } catch (Exception e) {
             responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             responseDTO.setMessage("An error occurred while deleting the reminder");
+            logger.error("An error occurred while deleting the reminder", e);
             return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/all")
-    public ResponseEntity<ResponseDTO<List<Reminder>>> getAllReminders(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<List<Reminder>>> getAllReminders(
+            @RequestHeader("Authorization") String token) {
+
         ResponseDTO<List<Reminder>> responseDTO = new ResponseDTO<>();
-
-        // Validate the JWT token and extract the username
-        String username = jwtService.extractUsername(token);
-
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
-        }
+        String username;
 
         try {
+            username = jwtService.extractUsername(token);
+
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
             List<Reminder> reminders = reminderService.getAllReminders(username); // Fetch reminders for the user
             responseDTO.setStatusCode(HttpStatus.OK.value());
             responseDTO.setMessage("Reminders retrieved successfully");
             responseDTO.setData(reminders);
+            logger.info("Retrieved {} reminders for username: {}", reminders.size(), username);
             return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+
         } catch (Exception e) {
             responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             responseDTO.setMessage("An error occurred while retrieving the reminders");
+            logger.error("An error occurred while retrieving the reminders", e);
             return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-
     @GetMapping("/{id}")
-    public ResponseEntity<ResponseDTO<Reminder>> getReminderById(@PathVariable String id, @RequestHeader("Authorization") String token) {
+    public ResponseEntity<ResponseDTO<Reminder>> getReminderById(
+            @PathVariable String id,
+            @RequestHeader("Authorization") String token) {
+
         ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
+        String username;
 
-        // Validate the JWT token and extract the username
-        String username = jwtService.extractUsername(token);
+        try {
+            username = jwtService.extractUsername(token);
 
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            Optional<Reminder> reminder = reminderService.getReminderById(id);
+            if (reminder.isPresent()) {
+                responseDTO.setStatusCode(HttpStatus.OK.value());
+                responseDTO.setMessage("Reminder retrieved successfully");
+                responseDTO.setData(reminder.get());
+                logger.info("Retrieved reminder successfully: {}", reminder.get());
+                return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+            } else {
+                responseDTO.setStatusCode(HttpStatus.NOT_FOUND.value());
+                responseDTO.setMessage("Reminder not found");
+                logger.warn("Reminder not found: ID = {}", id);
+                return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
+            }
+
+        } catch (Exception e) {
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while retrieving the reminder");
+            logger.error("An error occurred while retrieving the reminder", e);
+            return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        Optional<Reminder> reminder = reminderService.getReminderById(id);
-        if (reminder.isPresent()) {
-            responseDTO.setStatusCode(HttpStatus.OK.value());
-            responseDTO.setMessage("Reminder retrieved successfully");
-            responseDTO.setData(reminder.get());
-            return new ResponseEntity<>(responseDTO, HttpStatus.OK);
-        } else {
-            responseDTO.setStatusCode(HttpStatus.NOT_FOUND.value());
-            responseDTO.setMessage("Reminder not found");
-            return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @GetMapping("/user/{username}")
-    public ResponseEntity<ResponseDTO<List<Reminder>>> getRemindersByUsername(@PathVariable String username, @RequestHeader("Authorization") String token) {
-        ResponseDTO<List<Reminder>> responseDTO = new ResponseDTO<>();
-
-        // Validate the JWT token and extract the username from the token
-        String tokenUsername = jwtService.extractUsername(token);
-
-        // Validate the token for the specific user
-        Optional<AuthUser> userOptional = authUserRepository.findByUsername(tokenUsername);
-        if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get()) || !tokenUsername.equals(username)) {
-            responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
-            responseDTO.setMessage("Invalid or expired token or unauthorized access");
-            return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
-        }
-
-        List<Reminder> reminders = reminderService.getRemindersByUsername(username);
-        responseDTO.setStatusCode(HttpStatus.OK.value());
-        responseDTO.setMessage("Reminders retrieved successfully");
-        responseDTO.setData(reminders);
-        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
 }

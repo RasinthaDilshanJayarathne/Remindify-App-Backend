@@ -11,7 +11,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AuthUserDetailsService implements UserDetailsService {
@@ -28,5 +30,11 @@ public class AuthUserDetailsService implements UserDetailsService {
 
         // Return UserDetails implementation
         return authUser;
+    }
+
+    public List<AuthUser> findUsersByIds(List<String> userIds) {
+        return authUserRepository.findAllById(userIds).stream()
+                .filter(user -> userIds.contains(user.getId()))
+                .collect(Collectors.toList());
     }
 }
