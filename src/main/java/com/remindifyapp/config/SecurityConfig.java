@@ -34,8 +34,10 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // Consider enabling CSRF protection in production
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/logout", "/reminders/create").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/getReminderByUsername", "/reminders/**", "/error").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/logout", "/reminders/create", "/reminders/{id}", "/reminders/user/{username}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/reminders/user/{username}", "/reminders/{id}", "/reminders/all").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/reminders/update/{id}").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/reminders/{id}").permitAll()
                         .anyRequest().authenticated()) // All other endpoints require authentication
                 .userDetailsService(authUserDetailsService) // Custom UserDetailsService
                 .logout(logout -> logout
