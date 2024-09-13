@@ -1,11 +1,12 @@
 /**
  * Author : rasintha_j
- * Date : 9/7/2024
- * Time : 7:28 PM
+ * Date : 9/9/2024
+ * Time : 8:27 AM
  * Project Name : remindifyapp
  */
 
 package com.remindifyapp.entity;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,15 +20,11 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Document("reminder")
-public class Reminder {
+@Document("message")
+public class Message {
     @Id
     private String id;  // Use String for MongoDB ObjectId
-    private String title;
-    private String username;
-    private String venue;
-    private String reminderDate;
-    private String reminderTime;
-    private String category;
-    private String createdBy;  // Reference to the AuthUser who created the reminder
+    private String content;
+    private String senderId;  // Reference to the AuthUser who sent the message
+    private LocalDateTime sentDate;
 }

@@ -33,8 +33,8 @@ public class SecurityConfig {
         return httpSecurity
                 .csrf(csrf -> csrf.disable()) // Consider enabling CSRF protection in production
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/logout", "/reminders/create", "/reminders/{id}", "/reminders/user/{username}", "/groups/create", "/groups/removeUser/{groupId}/{userId}", "/groups/addUser/{groupId}/{userId}").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/reminders/user/{username}", "/reminders/{id}", "/reminders/all", "/groups/all").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/users/register", "/users/login", "/users/logout", "/reminders/create", "/reminders/{id}", "/reminders/user/{username}", "/groups/create", "/groups/removeUser/{groupId}/{userId}", "/groups/addUser/{groupId}/{userId}", "/groups/{groupId}/messages", "/groups/{groupId}/reminders").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/users/allUsers","/reminders/user/{username}", "/reminders/{id}", "/reminders/all", "/reminders/by-username", "/groups/all", "/groups/my-groups", "/groups/allUsers/{groupId}", "/bot/chat", "/groups/{groupId}/messages", "/groups/{groupId}/reminders").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/reminders/update/{id}").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/reminders/{id}").permitAll()
                         .anyRequest().authenticated()) // All other endpoints require authentication

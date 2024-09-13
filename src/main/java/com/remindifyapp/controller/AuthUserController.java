@@ -4,6 +4,7 @@ import com.remindifyapp.bean.LoginDTO;
 import com.remindifyapp.bean.ResponseDTO;
 import com.remindifyapp.bean.UserDTO;
 import com.remindifyapp.entity.AuthUser;
+import com.remindifyapp.entity.Reminder;
 import com.remindifyapp.repository.AuthUserRepository;
 import com.remindifyapp.service.JWTService;
 import com.remindifyapp.service.AuthUserDetailsService;
@@ -18,14 +19,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -44,6 +48,12 @@ public class AuthUserController {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+    }
+
+    private Optional<AuthUser> authenticateUser(String token) {
+        String username = jwtService.extractUsername(token);
+        return authUserRepository.findByUsername(username)
+                .filter(user -> jwtService.isTokenValid(token, user));
     }
 
     @PostMapping("/register")
@@ -137,6 +147,63 @@ public class AuthUserController {
             return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/allUsers")
+    public ResponseEntity<ResponseDTO<List<AuthUser>>> getAllUsers(@RequestHeader("Authorization") String token) {
+        ResponseDTO<List<AuthUser>> responseDTO = new ResponseDTO<>();
+
+        try {
+            // Remove the "Bearer " prefix from the token
+            String jwtToken = token.replace("Bearer ", "");
+
+            // Authenticate the user using the token
+            Optional<AuthUser> userOptional = authenticateUser(jwtToken);
+
+            // If user authentication fails, return an unauthorized response
+            if (!userOptional.isPresent()) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token");
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            // Get the currently logged-in user
+            AuthUser loggedInUser = userOptional.get();
+            String loggedInUsername = loggedInUser.getUsername();
+
+            // Fetch all users from the repository
+            List<AuthUser> users = authUserRepository.findAll();
+
+            // Filter out the currently logged-in user from the list
+            List<AuthUser> filteredUsers = users.stream()
+                    .filter(user -> !user.getUsername().equals(loggedInUsername))
+                    .collect(Collectors.toList());
+
+            // If no other users are found, return a not found response
+            if (filteredUsers.isEmpty()) {
+                logger.warn("No other users found");
+                responseDTO.setStatusCode(HttpStatus.NOT_FOUND.value());
+                responseDTO.setMessage("No other users found");
+                return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
+            }
+
+            // Users found, return them in the response
+            logger.info("Users fetched successfully");
+            responseDTO.setStatusCode(HttpStatus.OK.value());
+            responseDTO.setMessage("Users fetched successfully");
+            responseDTO.setData(filteredUsers);
+            return new ResponseEntity<>(responseDTO, HttpStatus.OK);
+
+        } catch (Exception e) {
+            // Handle any unexpected exceptions
+            logger.error("Error fetching users", e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while fetching users");
+            return new ResponseEntity<>(responseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 
     @GetMapping("/logout")
     public ResponseEntity<String> logout(@RequestHeader("Authorization") String token) {

@@ -1,8 +1,6 @@
 package com.remindifyapp.controller;
 
-import com.remindifyapp.entity.ChatGroup;
-import com.remindifyapp.entity.AuthUser;
-import com.remindifyapp.entity.ChatGroupRequest;
+import com.remindifyapp.entity.*;
 import com.remindifyapp.repository.AuthUserRepository;
 import com.remindifyapp.service.AuthUserDetailsService;
 import com.remindifyapp.service.ChatGroupService;
@@ -14,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -38,6 +37,7 @@ public class ChatGroupController {
 
     @Autowired
     private AuthUserRepository authUserRepository;
+
 
     @PostMapping("/create")
     public ResponseEntity<ResponseDTO<ChatGroup>> createChatGroup(@Valid @RequestBody ChatGroupRequest chatGroupRequest, @RequestHeader("Authorization") String token) {
@@ -195,6 +195,251 @@ public class ChatGroupController {
             logger.error("Error fetching chat groups: ", e);
             responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             responseDTO.setMessage("An error occurred while fetching chat groups");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
+        }
+    }
+
+    @GetMapping("/my-groups")
+    public ResponseEntity<ResponseDTO<List<ChatGroup>>> getMyChatGroups(@RequestHeader("Authorization") String token) {
+
+        logger.info("Received request to fetch chat groups where the logged-in user is a member");
+
+        ResponseDTO<List<ChatGroup>> responseDTO = new ResponseDTO<>();
+        String username;
+        try {
+            username = jwtService.extractUsername(token);
+
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            // Fetch chat groups where the logged-in user is a member
+            List<ChatGroup> userChatGroups = chatGroupService.getChatGroupsForUser(username);
+            responseDTO.setStatusCode(HttpStatus.OK.value());
+            responseDTO.setMessage("Fetched chat groups where the user is a member successfully");
+            responseDTO.setData(userChatGroups);
+
+            logger.info("Fetched {} chat groups for user: {}", userChatGroups.size(), username);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            logger.error("Error fetching chat groups for user {}: ", e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while fetching chat groups");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
+        }
+    }
+
+    @GetMapping("/allUsers/{groupId}")
+    public ResponseEntity<ResponseDTO<ChatGroup>> getGroupDetails(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String groupId) {
+
+        logger.info("Received request to fetch details for group with ID: {}", groupId);
+
+        ResponseDTO<ChatGroup> responseDTO = new ResponseDTO<>();
+        String username;
+        try {
+            username = jwtService.extractUsername(token);
+            if (username == null || username.isEmpty()) {
+                throw new RuntimeException("Username extraction failed");
+            }
+
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent()) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("User not found");
+                logger.warn("User not found for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            if (!jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            // Fetch the group by its ID
+            Optional<ChatGroup> groupOptional = chatGroupService.getChatGroupById(groupId);
+            if (!groupOptional.isPresent()) {
+                responseDTO.setStatusCode(HttpStatus.NOT_FOUND.value());
+                responseDTO.setMessage("Group not found");
+                logger.warn("Group not found for ID: {}", groupId);
+                return new ResponseEntity<>(responseDTO, HttpStatus.NOT_FOUND);
+            }
+
+            ChatGroup chatGroup = groupOptional.get();
+
+            // Prepare the DTO with group details and members
+            ChatGroup chatGroupDTO = new ChatGroup();
+            chatGroupDTO.setGroupname(chatGroup.getGroupname());
+            chatGroupDTO.setMembers(chatGroup.getMembers());
+
+            responseDTO.setStatusCode(HttpStatus.OK.value());
+            responseDTO.setMessage("Fetched group details successfully");
+            responseDTO.setData(chatGroupDTO);
+
+            logger.info("Fetched details for group with ID: {}", groupId);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            logger.error("Error fetching details for group with ID: {}: ", groupId, e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while fetching group details");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
+        }
+    }
+
+
+    // Add a new message to a chat group
+    @PostMapping("/{groupId}/messages")
+    public ResponseEntity<ResponseDTO<Message>> addMessageToGroup(
+            @PathVariable("groupId") String groupId,
+            @Valid @RequestBody Message message,
+            @RequestHeader("Authorization") String token) {
+
+        logger.info("Received request to add message to group {}", groupId);
+        ResponseDTO<Message> responseDTO = new ResponseDTO<>();
+        String username;
+
+        try {
+            username = jwtService.extractUsername(token);
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            message.setSenderId(userOptional.get().getId());
+            Message savedMessage = chatGroupService.addMessageToGroup(groupId, message);
+            responseDTO.setStatusCode(HttpStatus.CREATED.value());
+            responseDTO.setMessage("Message added successfully");
+            responseDTO.setData(savedMessage);
+
+            logger.info("Message added successfully to group {}", groupId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+
+        } catch (Exception e) {
+            logger.error("Error adding message to chat group: ", e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while adding the message");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
+        }
+    }
+
+    // Get all messages from a chat group
+    @GetMapping("/{groupId}/messages")
+    public ResponseEntity<ResponseDTO<List<Message>>> getMessagesFromGroup(
+            @PathVariable("groupId") String groupId,
+            @RequestHeader("Authorization") String token) {
+
+        logger.info("Received request to fetch messages from group {}", groupId);
+        ResponseDTO<List<Message>> responseDTO = new ResponseDTO<>();
+        String username;
+
+        try {
+            username = jwtService.extractUsername(token);
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            List<Message> messages = chatGroupService.getMessagesFromGroup(groupId);
+            responseDTO.setStatusCode(HttpStatus.OK.value());
+            responseDTO.setMessage("Fetched messages successfully");
+            responseDTO.setData(messages);
+
+            logger.info("Fetched {} messages from group {}", messages.size(), groupId);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            logger.error("Error fetching messages from chat group: ", e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while fetching messages");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
+        }
+    }
+
+    // Add a new reminder to a chat group
+    @PostMapping("/{groupId}/reminders")
+    public ResponseEntity<ResponseDTO<Reminder>> addReminderToGroup(
+            @PathVariable("groupId") String groupId,
+            @Valid @RequestBody Reminder reminder,
+            @RequestHeader("Authorization") String token) {
+
+        logger.info("Received request to add reminder to group {}", groupId);
+        ResponseDTO<Reminder> responseDTO = new ResponseDTO<>();
+        String username;
+
+        try {
+            username = jwtService.extractUsername(token);
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            reminder.setCreatedBy(userOptional.get().getId());
+            Reminder savedReminder = chatGroupService.addReminderToGroup(groupId, reminder);
+            responseDTO.setStatusCode(HttpStatus.CREATED.value());
+            responseDTO.setMessage("Reminder added successfully");
+            responseDTO.setData(savedReminder);
+
+            logger.info("Reminder added successfully to group {}", groupId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+
+        } catch (Exception e) {
+            logger.error("Error adding reminder to chat group: ", e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while adding the reminder");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
+        }
+    }
+
+    // Get all reminders from a chat group
+    @GetMapping("/{groupId}/reminders")
+    public ResponseEntity<ResponseDTO<List<Reminder>>> getRemindersFromGroup(
+            @PathVariable("groupId") String groupId,
+            @RequestHeader("Authorization") String token) {
+
+        logger.info("Received request to fetch reminders from group {}", groupId);
+        ResponseDTO<List<Reminder>> responseDTO = new ResponseDTO<>();
+        String username;
+
+        try {
+            username = jwtService.extractUsername(token);
+            Optional<AuthUser> userOptional = authUserRepository.findByUsername(username);
+            if (!userOptional.isPresent() || !jwtService.isTokenValid(token, userOptional.get())) {
+                responseDTO.setStatusCode(HttpStatus.UNAUTHORIZED.value());
+                responseDTO.setMessage("Invalid or expired token");
+                logger.warn("Invalid or expired token for username: {}", username);
+                return new ResponseEntity<>(responseDTO, HttpStatus.UNAUTHORIZED);
+            }
+
+            List<Reminder> reminders = chatGroupService.getRemindersFromGroup(groupId);
+            responseDTO.setStatusCode(HttpStatus.OK.value());
+            responseDTO.setMessage("Fetched reminders successfully");
+            responseDTO.setData(reminders);
+
+            logger.info("Fetched {} reminders from group {}", reminders.size(), groupId);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (Exception e) {
+            logger.error("Error fetching reminders from chat group: ", e);
+            responseDTO.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            responseDTO.setMessage("An error occurred while fetching reminders");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseDTO);
         }
     }

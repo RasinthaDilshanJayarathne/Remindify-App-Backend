@@ -1,11 +1,12 @@
 /**
  * Author : rasintha_j
- * Date : 9/7/2024
- * Time : 7:28 PM
+ * Date : 9/9/2024
+ * Time : 2:26 PM
  * Project Name : remindifyapp
  */
 
 package com.remindifyapp.entity;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,21 +14,18 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Document("reminder")
-public class Reminder {
+public class Mood {
     @Id
-    private String id;  // Use String for MongoDB ObjectId
-    private String title;
+    private String id;
     private String username;
-    private String venue;
-    private String reminderDate;
-    private String reminderTime;
-    private String category;
-    private String createdBy;  // Reference to the AuthUser who created the reminder
+    private LocalDate date;
+    private String moodLevel;
+    private String comments;
 }

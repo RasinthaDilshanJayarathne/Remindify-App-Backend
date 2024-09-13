@@ -52,4 +52,8 @@ public class ReminderService {
     public List<Reminder> getAllReminders(String username) {
         return reminderRepository.findByUsername(username);
     }
+
+    public List<Reminder> findRemindersByUsername(String username) {
+        return reminderRepository.findByUsername(username);
+    }
 }

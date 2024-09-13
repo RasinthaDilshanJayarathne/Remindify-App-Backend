@@ -31,4 +31,9 @@ public class ChatGroup {
     private List<AuthUser> members;  // List of member AuthUser entities
     private LocalDateTime createdDate;
     private String status;  // e.g., "active", "archived"
+
+    @DBRef
+    private List<Message> messages;  // List of messages shared in the group
+    @DBRef
+    private List<Reminder> reminders;  // List of reminders set in the group
 }
